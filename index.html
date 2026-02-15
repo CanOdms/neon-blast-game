@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Neon Blast - Puzzle Game</title>
+    <style>
+        :root {
+            --bg-color: #0f0f0f;
+            --grid-border: #222;
+            --neon-cyan: #00f2ff;
+            --neon-magenta: #ff00ff;
+            --neon-lime: #39ff14;
+            --neon-orange: #ff6600;
+            --cell-size: 40px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 420px;
+            padding: 15px;
+            position: relative;
+            height: 100vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Difficulty Selection Screen */
+        #difficulty-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        #difficulty-screen.hidden {
+            display: none;
+        }
+
+        .difficulty-container {
+            text-align: center;
+        }
+
+        .difficulty-container h2 {
+            color: var(--neon-cyan);
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            text-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .difficulty-btn {
+            padding: 18px 50px;
+            font-size: 1.3rem;
+            border: 2px solid;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+            width: 220px;
+            background: transparent;
+        }
+
+        .difficulty-btn.easy {
+            color: var(--neon-lime);
+            border-color: var(--neon-lime);
+        }
+
+        .difficulty-btn.easy:hover {
+            background: var(--neon-lime);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-lime);
+        }
+
+        .difficulty-btn.medium {
+            color: var(--neon-orange);
+            border-color: var(--neon-orange);
+        }
+
+        .difficulty-btn.medium:hover {
+            background: var(--neon-orange);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-orange);
+        }
+
+        .difficulty-btn.hard {
+            color: var(--neon-magenta);
+            border-color: var(--neon-magenta);
+        }
+
+        .difficulty-btn.hard:hover {
+            background: var(--neon-magenta);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-magenta);
+        }
+
+        #header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            flex: 1;
+            text-align: center;
+        }
+
+        .sound-toggle {
+            width: 44px;
+            height: 44px;
+            border: 2px solid var(--neon-cyan);
+            background: transparent;
+            color: var(--neon-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sound-toggle:hover {
+            background: var(--neon-cyan);
+            color: black;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .score-info {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+
+        .score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        #current-score {
+            color: var(--neon-magenta);
+            text-shadow: 0 0 5px var(--neon-magenta);
+        }
+
+        #high-score {
+            color: var(--neon-lime);
+            text-shadow: 0 0 5px var(--neon-lime);
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .difficulty-badge.easy {
+            background: rgba(57, 255, 20, 0.15);
+            color: var(--neon-lime);
+            border: 1px solid var(--neon-lime);
+        }
+
+        .difficulty-badge.medium {
+            background: rgba(255, 102, 0, 0.15);
+            color: var(--neon-orange);
+            border: 1px solid var(--neon-orange);
+        }
+
+        .difficulty-badge.hard {
+            background: rgba(255, 0, 255, 0.15);
+            color: var(--neon-magenta);
+            border: 1px solid var(--neon-magenta);
+        }
+
+        #board-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, var(--cell-size));
+            grid-template-rows: repeat(8, var(--cell-size));
+            gap: 2px;
+            background-color: #1a1a1a;
+            padding: 4px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 2px solid #333;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        #board.combo-pulse {
+            animation: board-pulse 0.6s ease-out;
+        }
+
+        @keyframes board-pulse {
+            0% { border-color: #333; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }
+            50% { border-color: currentColor; box-shadow: 0 0 40px currentColor; }
+            100% { border-color: #333; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background-color: #111;
+            border: 1px solid var(--grid-border);
+            border-radius: 4px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .cell.filled {
+            border: none;
+        }
+
+        .cell.clearing {
+            animation: clear-anim 0.5s ease-out forwards;
+        }
+
+        @keyframes clear-anim {
+            0% { transform: scale(1); opacity: 1; filter: brightness(2); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* Particle Effect */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+        @keyframes particle-burst {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) scale(0);
+            }
+        }
+
+        /* Combo Text Animation */
+        .combo-text {
+            position: absolute;
+            font-size: 2.5rem;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 0 0 20px currentColor;
+            animation: combo-pop 1s ease-out forwards;
+            z-index: 100;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes combo-pop {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -70px) scale(1.1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -130px) scale(0.8);
+            }
+        }
+
+        #shapes-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            height: 110px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .shape-preview {
+            display: grid;
+            gap: 2px;
+            cursor: grab;
+            transition: transform 0.2s ease, filter 0.2s ease;
+            padding: 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .shape-preview:active {
+            cursor: grabbing;
+        }
+
+        .shape-preview.hidden {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .shape-cell {
+            width: 25px;
+            height: 25px;
+            border-radius: 3px;
+            transition: transform 0.2s ease;
+        }
+
+        /* Neon Colors */
+        .cyan { background-color: var(--neon-cyan); box-shadow: 0 0 8px var(--neon-cyan); }
+        .magenta { background-color: var(--neon-magenta); box-shadow: 0 0 8px var(--neon-magenta); }
+        .lime { background-color: var(--neon-lime); box-shadow: 0 0 8px var(--neon-lime); }
+        .orange { background-color: var(--neon-orange); box-shadow: 0 0 8px var(--neon-orange); }
+
+        /* Dragging */
+        #drag-proxy {
+            position: fixed;
+            pointer-events: none;
+            display: grid;
+            gap: 2px;
+            z-index: 1000;
+            opacity: 0.9;
+            transition: transform 0.1s ease-out;
+        }
+
+        #drag-proxy.active {
+            transform: scale(1.2);
+        }
+
+        .drag-cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border-radius: 4px;
+            box-shadow: 0 0 12px currentColor;
+        }
+
+        /* Power-ups Container */
+        #powerups-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .powerup-btn {
+            flex: 1;
+            max-width: 120px;
+            padding: 12px;
+            border: 2px solid var(--neon-cyan);
+            background: transparent;
+            color: var(--neon-cyan);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: 0.3s;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .powerup-btn:hover:not(:disabled) {
+            background: var(--neon-cyan);
+            color: black;
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        .powerup-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #555;
+            color: #555;
+        }
+
+        .powerup-charge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--neon-cyan);
+            color: black;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        #modal {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid var(--neon-magenta);
+            text-align: center;
+            box-shadow: 0 0 30px var(--neon-magenta);
+            animation: modal-pop 0.3s ease-out;
+            max-width: 90%;
+        }
+
+        @keyframes modal-pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #modal h2 {
+            color: var(--neon-magenta);
+            margin-bottom: 15px;
+            font-size: 2rem;
+        }
+
+        .modal-scores {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .modal-score-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .modal-score-label {
+            color: #888;
+        }
+
+        .modal-score-value {
+            color: var(--neon-lime);
+            font-weight: bold;
+        }
+
+        #final-score {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--neon-lime);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        #restart-btn, #menu-btn {
+            background: transparent;
+            color: var(--neon-cyan);
+            border: 2px solid var(--neon-cyan);
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        #restart-btn:hover, #menu-btn:hover {
+            background: var(--neon-cyan);
+            color: black;
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        /* Ad Placeholder */
+        #ad-banner {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            height: 50px;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #555;
+            background: #050505;
+            z-index: 10;
+        }
+
+        @media (max-height: 700px) {
+            :root { --cell-size: 35px; }
+            h1 { font-size: 1.5rem; }
+            #shapes-container { height: 95px; }
+            .score-info { gap: 30px; }
+        }
+
+        @media (max-width: 360px) {
+            :root { --cell-size: 36px; }
+            h1 { font-size: 1.6rem; }
+            .score-info { gap: 25px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="difficulty-screen">
+        <div class="difficulty-container">
+            <h2>Zorluk Seçin</h2>
+            <div class="difficulty-buttons">
+                <button class="difficulty-btn easy" data-difficulty="easy">Kolay</button>
+                <button class="difficulty-btn medium" data-difficulty="medium">Orta</button>
+                <button class="difficulty-btn hard" data-difficulty="hard">Zor</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div id="header">
+            <div class="header-top">
+                <h1>NEON BLAST</h1>
+                <button class="sound-toggle" id="sound-toggle" title="Ses Aç/Kapat">🔊</button>
+            </div>
+            <div class="difficulty-badge" id="difficulty-badge"></div>
+            <div class="score-info">
+                <div class="score-item">
+                    <div class="score-label">Skor</div>
+                    <div class="score-value" id="current-score">0</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">En Yüksek</div>
+                    <div class="score-value" id="high-score">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="board-wrapper">
+            <div id="board"></div>
+        </div>
+
+        <div id="shapes-container"></div>
+
+        <div id="powerups-container">
+            <button class="powerup-btn" id="bomb-btn" title="Bomba: Sonraki bloğu yerleştirirken 3x3 alan temizle">
+                💣 Bomba
+                <span class="powerup-charge">1</span>
+            </button>
+            <button class="powerup-btn" id="refresh-btn" title="Yenile: Mevcut 3 şekli değiştir">
+                🔄 Yenile
+                <span class="powerup-charge">1</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="modal-overlay">
+        <div id="modal">
+            <h2>OYUN BİTTİ</h2>
+            <div class="modal-scores">
+                <div class="modal-score-row">
+                    <span class="modal-score-label">Skor:</span>
+                    <span class="modal-score-value" id="final-score">0</span>
+                </div>
+                <div class="modal-score-row">
+                    <span class="modal-score-label">En Yüksek:</span>
+                    <span class="modal-score-value" id="final-high-score">0</span>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="restart-btn">Tekrar Oyna</button>
+                <button id="menu-btn">Ana Menü</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ad-banner">AdMob Banner Placeholder</div>
+
+    <div id="drag-proxy"></div>
+
+    <script>
+        const BOARD_SIZE = 8;
+        const boardElement = document.getElementById('board');
+        const boardWrapper = document.getElementById('board-wrapper');
+        const shapesContainer = document.getElementById('shapes-container');
+        const currentScoreElement = document.getElementById('current-score');
+        const highScoreElement = document.getElementById('high-score');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const finalScoreElement = document.getElementById('final-score');
+        const finalHighScoreElement = document.getElementById('final-high-score');
+        const restartBtn = document.getElementById('restart-btn');
+        const menuBtn = document.getElementById('menu-btn');
+        const dragProxy = document.getElementById('drag-proxy');
+        const soundToggle = document.getElementById('sound-toggle');
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        const difficultyBadge = document.getElementById('difficulty-badge');
+        const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+        const bombBtn = document.getElementById('bomb-btn');
+        const refreshBtn = document.getElementById('refresh-btn');
+
+        let board = [];
+        let score = 0;
+        let highScore = 0;
+        let currentShapes = [];
+        let activeShapeIndex = null;
+        let isDragging = false;
+        let soundEnabled = true;
+        let currentDifficulty = 'medium';
+        let bombCharges = 1;
+        let refreshCharges = 1;
+        let bombActive = false;
+
+        // Shape definitions for different difficulties
+        const SHAPE_SETS = {
+            easy: [
+                { layout: [[1]], color: 'cyan' },
+                { layout: [[1, 1]], color: 'magenta' },
+                { layout: [[1], [1]], color: 'lime' },
+                { layout: [[1, 1], [1, 1]], color: 'cyan' },
+                { layout: [[1, 1, 1]], color: 'magenta' },
+                { layout: [[1], [1], [1]], color: 'lime' }
+            ],
+            medium: [
+                { layout: [[1, 1, 1, 1]], color: 'cyan' },
+                { layout: [[1, 1], [1, 1]], color: 'magenta' },
+                { layout: [[0, 1, 0], [1, 1, 1]], color: 'lime' },
+                { layout: [[1, 1, 0], [0, 1, 1]], color: 'cyan' },
+                { layout: [[0, 1, 1], [1, 1, 0]], color: 'magenta' },
+                { layout: [[1, 0, 0], [1, 1, 1]], color: 'lime' },
+                { layout: [[0, 0, 1], [1, 1, 1]], color: 'orange' },
+                { layout: [[1]], color: 'cyan' },
+                { layout: [[1, 1, 1]], color: 'magenta' },
+                { layout: [[1], [1]], color: 'lime' }
+            ],
+            hard: [
+                { layout: [[1, 1, 1, 1]], color: 'cyan' },
+                { layout: [[1, 1], [1, 1]], color: 'magenta' },
+                { layout: [[0, 1, 0], [1, 1, 1]], color: 'lime' },
+                { layout: [[1, 1, 0], [0, 1, 1]], color: 'cyan' },
+                { layout: [[0, 1, 1], [1, 1, 0]], color: 'magenta' },
+                { layout: [[1, 0, 0], [1, 1, 1]], color: 'lime' },
+                { layout: [[0, 0, 1], [1, 1, 1]], color: 'orange' },
+                { layout: [[1, 1, 1], [1, 1, 1], [1, 1, 1]], color: 'cyan' },
+                { layout: [[1, 1, 1, 1], [1, 0, 0, 0]], color: 'magenta' },
+                { layout: [[1, 1], [1, 1], [1, 1]], color: 'lime' },
+                { layout: [[1, 1, 1, 1], [0, 0, 0, 1]], color: 'orange' },
+                { layout: [[1, 1, 1], [0, 0, 1]], color: 'cyan' }
+            ]
+        };
+
+        // Load preferences from localStorage
+        function loadPreferences() {
+            soundEnabled = localStorage.getItem('neonBlast_soundEnabled') !== 'false';
+            highScore = parseInt(localStorage.getItem('neonBlast_highScore')) || 0;
+            updateSoundToggle();
+            updateHighScoreDisplay();
+        }
+
+        // Save preferences to localStorage
+        function savePreferences() {
+            localStorage.setItem('neonBlast_soundEnabled', soundEnabled);
+            localStorage.setItem('neonBlast_highScore', highScore);
+        }
+
+        // Sound system
+        function playSound(type) {
+            if (!soundEnabled) return;
+            
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioContext.currentTime;
+                
+                let frequency, duration, attack, decay;
+                
+                switch(type) {
+                    case 'place':
+                        frequency = 400;
+                        duration = 0.1;
+                        attack = 0.01;
+                        decay = 0.08;
+                        break;
+                    case 'clear':
+                        frequency = 800;
+                        duration = 0.2;
+                        attack = 0.02;
+                        decay = 0.18;
+                        break;
+                    case 'combo':
+                        frequency = 1200;
+                        duration = 0.15;
+                        attack = 0.01;
+                        decay = 0.14;
+                        break;
+                    case 'gameover':
+                        frequency = 200;
+                        duration = 0.3;
+                        attack = 0.05;
+                        decay = 0.25;
+                        break;
+                    default:
+                        return;
+                }
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.linearRampToValueAtTime(0, now + duration);
+                
+                oscillator.start(now);
+                oscillator.stop(now + duration);
+            } catch(e) {
+                // Audio context error - continue without sound
+            }
+        }
+
+        // Vibration effect
+        function vibrate(duration = 20) {
+            if (navigator.vibrate) {
+                navigator.vibrate(duration);
+            }
+        }
+
+        // Particle explosion effect
+        function createParticleExplosion(cellElement) {
+            const rect = cellElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const particleCount = 8;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 6 + 3;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = centerX + 'px';
+                particle.style.top = centerY + 'px';
+                
+                const color = cellElement.className.includes('cyan') ? 'var(--neon-cyan)' :
+                             cellElement.className.includes('magenta') ? 'var(--neon-magenta)' :
+                             cellElement.className.includes('lime') ? 'var(--neon-lime)' :
+                             'var(--neon-orange)';
+                particle.style.background = color;
+                particle.style.boxShadow = `0 0 8px ${color}`;
+                
+                const angle = (i / particleCount) * Math.PI * 2;
+                const velocity = Math.random() * 100 + 50;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+                
+                particle.style.setProperty('--tx', tx + 'px');
+                particle.style.setProperty('--ty', ty + 'px');
+                particle.style.animation = `particle-burst 0.6s ease-out forwards`;
+                
+                document.body.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 600);
+            }
+        }
+
+        function updateSoundToggle() {
+            soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+        }
+
+        function updateHighScoreDisplay() {
+            highScoreElement.innerText = highScore;
+        }
+
+        function updatePowerupButtons() {
+            bombBtn.disabled = bombCharges === 0;
+            refreshBtn.disabled = refreshCharges === 0;
+            bombBtn.querySelector('.powerup-charge').textContent = bombCharges;
+            refreshBtn.querySelector('.powerup-charge').textContent = refreshCharges;
+        }
+
+        function setDifficulty(difficulty) {
+            currentDifficulty = difficulty;
+            difficultyScreen.classList.add('hidden');
+            
+            const badgeText = difficulty === 'easy' ? 'Kolay' : difficulty === 'medium' ? 'Orta' : 'Zor';
+            difficultyBadge.textContent = badgeText;
+            difficultyBadge.className = `difficulty-badge ${difficulty}`;
+            
+            initGame();
+        }
+
+        function initGame() {
+            board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(null));
+            score = 0;
+            bombCharges = 1;
+            refreshCharges = 1;
+            bombActive = false;
+            currentScoreElement.innerText = score;
+            modalOverlay.style.display = 'none';
+            updatePowerupButtons();
+            renderBoard();
+            spawnShapes();
+        }
+
+        function renderBoard() {
+            boardElement.innerHTML = '';
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if (board[r][c]) {
+                        cell.classList.add('filled', board[r][c]);
+                    }
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        function spawnShapes() {
+            shapesContainer.innerHTML = '';
+            currentShapes = [];
+            const shapeSet = SHAPE_SETS[currentDifficulty];
+            
+            for (let i = 0; i < 3; i++) {
+                const shape = shapeSet[Math.floor(Math.random() * shapeSet.length)];
+                currentShapes.push(shape);
+                renderShapePreview(shape, i);
+            }
+        }
+
+        function renderShapePreview(shape, index) {
+            const preview = document.createElement('div');
+            preview.className = 'shape-preview';
+            preview.dataset.index = index;
+            preview.style.gridTemplateColumns = `repeat(${shape.layout[0].length}, 25px)`;
+            
+            shape.layout.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'shape-cell';
+                    if (val) cell.classList.add(shape.color);
+                    else cell.style.visibility = 'hidden';
+                    preview.appendChild(cell);
+                });
+            });
+
+            preview.addEventListener('touchstart', (e) => handleStart(e, index), { passive: false });
+            preview.addEventListener('mousedown', (e) => handleStart(e, index));
+            
+            shapesContainer.appendChild(preview);
+        }
+
+        function handleStart(e, index) {
+            if (currentShapes[index] === null) return;
+            
+            isDragging = true;
+            activeShapeIndex = index;
+            const shape = currentShapes[index];
+            
+            dragProxy.innerHTML = '';
+            dragProxy.classList.add('active');
+            dragProxy.style.display = 'grid';
+            dragProxy.style.gridTemplateColumns = `repeat(${shape.layout[0].length}, var(--cell-size))`;
+            
+            shape.layout.forEach(row => {
+                row.forEach(val => {
+                    const cell = document.createElement('div');
+                    cell.className = 'drag-cell';
+                    if (val) cell.classList.add(shape.color);
+                    else cell.style.visibility = 'hidden';
+                    dragProxy.appendChild(cell);
+                });
+            });
+
+            moveProxy(e);
+            e.preventDefault();
+        }
+
+        function moveProxy(e) {
+            if (!isDragging) return;
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            const shape = currentShapes[activeShapeIndex];
+            const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+            
+            const shapeWidth = shape.layout[0].length * cellSize;
+            const shapeHeight = shape.layout.length * cellSize;
+            
+            const offsetX = shapeWidth / 2;
+            const offsetY = shapeHeight + 20;
+
+            dragProxy.style.left = (clientX - offsetX) + 'px';
+            dragProxy.style.top = (clientY - offsetY) + 'px';
+        }
+
+        function handleMove(e) {
+            if (!isDragging) return;
+            moveProxy(e);
+        }
+
+        function handleEnd(e) {
+            if (!isDragging) return;
+            
+            const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            
+            dragProxy.classList.remove('active');
+            dragProxy.style.display = 'none';
+            isDragging = false;
+
+            const shape = currentShapes[activeShapeIndex];
+            const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+            
+            const shapeWidth = shape.layout[0].length * cellSize;
+            const shapeHeight = shape.layout.length * cellSize;
+            const offsetX = shapeWidth / 2;
+            const offsetY = shapeHeight + 20;
+            
+            const targetX = clientX - offsetX + cellSize / 2;
+            const targetY = clientY - offsetY + cellSize / 2;
+
+            const elements = document.elementsFromPoint(targetX, targetY);
+            const cellElement = elements.find(el => el.classList.contains('cell'));
+
+            if (cellElement) {
+                const r = parseInt(cellElement.dataset.row);
+                const c = parseInt(cellElement.dataset.col);
+                
+                if (canPlace(shape, r, c)) {
+                    placeShape(shape, r, c);
+                    
+                    if (bombActive) {
+                        activateBomb(r, c);
+                        bombActive = false;
+                    }
+                    
+                    playSound('place');
+                    vibrate(20);
+                    currentShapes[activeShapeIndex] = null;
+                    document.querySelector(`.shape-preview[data-index="${activeShapeIndex}"]`).classList.add('hidden');
+                    
+                    checkLines();
+                    
+                    if (currentShapes.every(s => s === null)) {
+                        spawnShapes();
+                    }
+
+                    if (isGameOver()) {
+                        playSound('gameover');
+                        vibrate(100);
+                        showGameOver();
+                    }
+                }
+            }
+            activeShapeIndex = null;
+        }
+
+        function canPlace(shape, row, col) {
+            for (let r = 0; r < shape.layout.length; r++) {
+                for (let c = 0; c < shape.layout[r].length; c++) {
+                    if (shape.layout[r][c]) {
+                        const targetR = row + r;
+                        const targetC = col + c;
+                        if (targetR >= BOARD_SIZE || targetC >= BOARD_SIZE || board[targetR][targetC] !== null) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        function placeShape(shape, row, col) {
+            for (let r = 0; r < shape.layout.length; r++) {
+                for (let c = 0; c < shape.layout[r].length; c++) {
+                    if (shape.layout[r][c]) {
+                        board[row + r][col + c] = shape.color;
+                    }
+                }
+            }
+            score += (shape.layout.flat().filter(v => v).length) * 10;
+            updateScore();
+            renderBoard();
+        }
+
+        function activateBomb(centerR, centerC) {
+            const cellsToClear = new Set();
+            
+            for (let r = centerR - 1; r <= centerR + 1; r++) {
+                for (let c = centerC - 1; c <= centerC + 1; c++) {
+                    if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
+                        cellsToClear.add(`${r},${c}`);
+                    }
+                }
+            }
+            
+            cellsToClear.forEach(cell => {
+                const [r, c] = cell.split(',').map(Number);
+                const cellElement = boardElement.children[r * BOARD_SIZE + c];
+                if (cellElement && board[r][c]) {
+                    createParticleExplosion(cellElement);
+                    cellElement.classList.add('clearing');
+                }
+            });
+
+            setTimeout(() => {
+                cellsToClear.forEach(cell => {
+                    const [r, c] = cell.split(',').map(Number);
+                    board[r][c] = null;
+                });
+                score += cellsToClear.size * 50;
+                updateScore();
+                renderBoard();
+            }, 500);
+        }
+
+        function checkLines() {
+            let rowsToClear = [];
+            let colsToClear = [];
+            let cellsToClear = new Set();
+
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                if (board[r].every(cell => cell !== null)) {
+                    rowsToClear.push(r);
+                    for (let c = 0; c < BOARD_SIZE; c++) {
+                        cellsToClear.add(`${r},${c}`);
+                    }
+                }
+            }
+
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                let full = true;
+                for (let r = 0; r < BOARD_SIZE; r++) {
+                    if (board[r][c] === null) {
+                        full = false;
+                        break;
+                    }
+                }
+                if (full) {
+                    colsToClear.push(c);
+                    for (let r = 0; r < BOARD_SIZE; r++) {
+                        cellsToClear.add(`${r},${c}`);
+                    }
+                }
+            }
+
+            const totalLines = rowsToClear.length + colsToClear.length;
+            if (totalLines > 0) {
+                const multiplier = totalLines > 1 ? totalLines : 1;
+                const basePoints = totalLines * BOARD_SIZE * 20;
+                const comboBonus = basePoints * (multiplier - 1);
+                score += basePoints + comboBonus;
+                
+                if (multiplier > 1) {
+                    showComboText(multiplier);
+                    playSound('combo');
+                    pulseBoardBorder(multiplier);
+                    vibrate(40);
+                } else {
+                    playSound('clear');
+                    vibrate(20);
+                }
+                
+                cellsToClear.forEach(cell => {
+                    const [r, c] = cell.split(',').map(Number);
+                    const cellElement = boardElement.children[r * BOARD_SIZE + c];
+                    if (cellElement) {
+                        cellElement.classList.add('clearing');
+                        createParticleExplosion(cellElement);
+                    }
+                });
+
+                setTimeout(() => {
+                    cellsToClear.forEach(cell => {
+                        const [r, c] = cell.split(',').map(Number);
+                        board[r][c] = null;
+                    });
+                    updateScore();
+                    renderBoard();
+                }, 500);
+            }
+        }
+
+        function showComboText(multiplier) {
+            const comboText = document.createElement('div');
+            comboText.className = 'combo-text';
+            comboText.textContent = `x${multiplier} COMBO!`;
+            
+            if (multiplier >= 3) {
+                comboText.style.color = 'var(--neon-lime)';
+            } else if (multiplier === 2) {
+                comboText.style.color = 'var(--neon-magenta)';
+            } else {
+                comboText.style.color = 'var(--neon-cyan)';
+            }
+            
+            boardWrapper.appendChild(comboText);
+            setTimeout(() => comboText.remove(), 1000);
+        }
+
+        function pulseBoardBorder(multiplier) {
+            const colors = ['var(--neon-cyan)', 'var(--neon-magenta)', 'var(--neon-lime)', 'var(--neon-orange)'];
+            const color = colors[multiplier % colors.length];
+            
+            boardElement.style.borderColor = color;
+            boardElement.style.boxShadow = `0 0 40px ${color}`;
+            boardElement.classList.add('combo-pulse');
+            
+            setTimeout(() => {
+                boardElement.classList.remove('combo-pulse');
+                boardElement.style.borderColor = '#333';
+                boardElement.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.5)';
+            }, 600);
+        }
+
+        function updateScore() {
+            currentScoreElement.innerText = score;
+            if (score > highScore) {
+                highScore = score;
+                updateHighScoreDisplay();
+                savePreferences();
+            }
+        }
+
+        function isGameOver() {
+            const remainingShapes = currentShapes.filter(s => s !== null);
+            if (remainingShapes.length === 0) return false;
+
+            for (const shape of remainingShapes) {
+                for (let r = 0; r < BOARD_SIZE; r++) {
+                    for (let c = 0; c < BOARD_SIZE; c++) {
+                        if (canPlace(shape, r, c)) return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function showGameOver() {
+            finalScoreElement.innerText = score;
+            finalHighScoreElement.innerText = highScore;
+            modalOverlay.style.display = 'flex';
+        }
+
+        // Event Listeners
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('touchend', handleEnd);
+        window.addEventListener('mouseup', handleEnd);
+
+        soundToggle.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            updateSoundToggle();
+            savePreferences();
+            playSound('place');
+        });
+
+        bombBtn.addEventListener('click', () => {
+            if (bombCharges > 0) {
+                bombCharges--;
+                bombActive = true;
+                updatePowerupButtons();
+                playSound('place');
+                vibrate(30);
+                bombBtn.style.background = 'var(--neon-cyan)';
+                bombBtn.style.color = 'black';
+                bombBtn.style.boxShadow = '0 0 20px var(--neon-cyan)';
+                setTimeout(() => {
+                    bombBtn.style.background = 'transparent';
+                    bombBtn.style.color = 'var(--neon-cyan)';
+                    bombBtn.style.boxShadow = 'none';
+                }, 300);
+            }
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            if (refreshCharges > 0) {
+                refreshCharges--;
+                updatePowerupButtons();
+                spawnShapes();
+                playSound('place');
+                vibrate(30);
+                refreshBtn.style.background = 'var(--neon-cyan)';
+                refreshBtn.style.color = 'black';
+                refreshBtn.style.boxShadow = '0 0 20px var(--neon-cyan)';
+                setTimeout(() => {
+                    refreshBtn.style.background = 'transparent';
+                    refreshBtn.style.color = 'var(--neon-cyan)';
+                    refreshBtn.style.boxShadow = 'none';
+                }, 300);
+            }
+        });
+
+        restartBtn.addEventListener('click', initGame);
+
+        menuBtn.addEventListener('click', () => {
+            difficultyScreen.classList.remove('hidden');
+            modalOverlay.style.display = 'none';
+        });
+
+        difficultyButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const difficulty = e.target.dataset.difficulty;
+                setDifficulty(difficulty);
+            });
+        });
+
+        // Initialize
+        loadPreferences();
+    </script>
+</body>
+</html>
